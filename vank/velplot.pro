@@ -1,0 +1,314 @@
+pro velplot, velst,timebin, dates, speed, errv, cai, nav, dumcf, $
+     yrs=yrs, tspan=tspan, nocolor=nocolor, yra=yra, nobox=nobox, median=median,  $
+	 nosig=nosig, subtt=subtt, noplot=noplot, nozero=nozero, $
+	 lzr=lzr,errcut=errcut,szfac=szfac,ps=ps,outfile=outfile,title=title,days=days,fitline=fitline
+
+
+;
+;Plot Radial Velocity vs. Time, based on data in VST structure.
+;VST structure is generated in VEL.PRO
+;
+;INPUT:
+;  velst  (input structure)  from VEL.PRO.  Contains Time of Obs (VELST.JD),
+;                        mean and median velocities  (velst.mnvel, velst.mdvel)
+;   
+;OPTIONAL INPUT:
+;  starname       (string)     Name of Star
+;  timebin        (float)      Time interval (DAYS) to "bin" velocities
+;  tspan          fltarr(2)    vector of starting and ending time (JD or yrs)
+;  cai            float        Calcium IR triplet index
+;
+;OPTIONAL KEYWORDS:
+;  yrs      (0 or 1)  /yrs  forces abscissa to be in years, not JD   
+;  nocolor  (0 or 1)  /nocolor for a monochrome terminal
+;  nosig    (0 or 1)   if nosig eq 0 then standard default, else don't xyout,sig
+;  nobox    (0, 1, 2)  if nobox eq 0 then standard default
+;                      if nobox eq 1 then don't plot the timebin averages
+;                      if nobox eq 2 then don't plot the error bars
+;  errcut   (real, 1.5 or 2 or 2.5) toss points with cf.errvel worse than (errcut)*median(cf.errvel)
+;
+IF n_params () lt 1 then begin
+  print,'Syntax: '
+  print,' VELPLOT,velst, [starname, timebin (days), dates, speed, errv], yrs=yrs, tspan=[start,end],nocolor=nocolor'
+  return
+ENDIF
+
+if n_elements(szfac) lt 1 then szfac=1.
+dd=velst.jd
+
+if min(dd) gt 2440000. then dd=dd-2440000.              ;reduced JD
+;	
+
+   av = velst              ;Protect Structure containing results from VEL.PRO
+	tagnam=tag_names(av)
+	obdex=first_el(where(tagnam eq 'OBNM'))
+	if obdex eq -1 then obdex=first_el(where(tagnam eq 'OBNAM'))
+
+   	vel = av.mnvel
+   	errvel = av.errvel
+   	cat = intarr(n_elements(errvel))             ;CAT initially set to 0
+   	cair = av.sp1                                ;Calcium IR triplet index
+   
+   	if keyword_set(median) then vel=av.mdvel
+   	if not keyword_set(nozero) then vel=vel-median(vel)
+
+   	numobs = n_elements(av.jd)
+   	if n_elements(starname) lt 1 then starname=' '
+   	if n_elements(timebin) ne 1 then timebin=0
+   	if n_elements(nobox) ne 1 then nobox=0
+   	if n_elements(nosig) ne 1 then nosig=0
+   	if n_elements(subtt) ne 1 then subtt=' '
+;
+
+;TIME MATTERS (ABSCISSA: JD or years, TIMEBIN UNITS)
+    xarr = av.jd
+    xarrorig = xarr
+    xtit = '!6 Julian Date - 2440000'
+    timetrim = 0.
+    prepost=9675.                              ;pre/post Julian Date
+
+    IF keyword_set(yrs) then begin                             ; YEARS?
+         prepost=1994.87                         ;pre/post year
+		; xarr = 1987. + (xarr - 6795.5)/365.25   ;1987.0 = 2446795.5 JD
+		;   the above conversion is off by 24 hours  DF 1-24-00
+         xarr = 1987. + (xarr - 6796.5)/365.25   ;1987.0 = 2446796.5 JD
+         xtit = '!6Time (Years)'
+         timebin = 2./24.
+		; timebin = timebin/365.25                   ;timebin in yrs.
+         if ( max(xarr) - min(xarr) ) lt 2.5 then begin
+	    	xtit='!6Time  (Year-'+strtrim(fix(min(xarr)),2)+')'
+	    	prepost=prepost-fix(min(xarr))
+	    	xarr=xarr-fix(min(xarr))
+         endif
+    endif else if max(xarr) lt (min(xarr) + 300) then begin    ; <300 days?
+	 	dum = fix(xarr(0)/100) * 100
+        timetrim = dum             ;time trimmed off original JD's
+	 	xarr = av.jd-dum
+	 	dumst = strtrim(string(2440000+dum),2)
+        xtit = '!6 Julian Date - '+dumst
+    ENDIF  ;yrs
+    
+    if keyword_set(days) then begin
+        xarr = xarrorig
+        dum = fix(xarr[0])
+        xarr = xarr-dum
+        dumst = strtrim(string(2440000+dum),2)
+        xtit = '!6 Julian Date - '+dumst
+    endif
+    
+    t0 = long(min(xarr))
+    if max(av.jd) lt (min(av.jd)+1) then begin                 ; <1 day?
+		xt = 'Julian Date + '+strtrim(long(2440000)+long(min(av.jd)),2)
+    	timetrim = min(av.jd)
+		xarr = av.jd - min(av.jd)
+    endif
+    
+;PLOT CHARACTERISTICS
+    !p.charsize=1.2
+    !x.charsize=1.2
+    !y.charsize=1.2
+;   !p.thick=2
+    !x.margin=[9,4]
+    !y.margin=[5,3]
+    yt='!6Velocity  (m s!e-1!n)'
+    starname = '!6'+string(starname)  ;make duplex Roman Font
+    dt = max(xarr) - min(xarr)                     ;time range
+    xr = [min(xarr)-0.05*dt, max(xarr)+0.05*dt ]   ;plot limits
+    if keyword_set(tspan) then xr = tspan
+    yr = [-100,100]
+    if max(vel + errvel) gt yr(1) or min(vel - errvel) lt yr(0) then $
+         yr = [min(vel-errvel)-10, max(vel+errvel)+10]
+    if (max(vel)-min(vel) lt 40) then yr=[-30,30]
+;    if max(yr) lt max(vel) then yr=yr+10   ;PB kludge, 24 Sept 1997
+    if n_elements(yra) eq 2 then yr = yra
+    a=findgen(32) * (!pi*2/32.)
+    usersym,cos(a),sin(a),/fill      ;circle plot sym #8
+
+; set plots to have a white background and a black foreground (easier for printing); dave 2/24/06
+	loadct,39
+	!p.background = 255
+	!p.color = 0
+	!p.font = -1   ; Hershey for Greek letters - must be +1 or 0 for ps plots
+	if 1-keyword_set(outfile) then outfile='velplot'
+	if keyword_set(ps) then begin
+		ps_open,outfile
+		!p.font=1
+	endif
+	if ~keyword_set(noplot) then begin  ; ps_open
+   		if keyword_set(lzr) then begin
+       		ps_open,'velplot'
+       		starname = ''
+   		endif
+   		PLOT, xarr, vel, xtit=xtit, ytit=yt, titl=title,charsize=2, $
+            xr=xr, yra=yr, /xsty, /ysty, psym=8,syms=0.4*szfac, subtitle=subtt 
+   		sigall = stddev(vel)
+    	xo = max(xarr)-0.35*dt
+    	dy = yr(1) - yr(0)
+    	yo = yr(1) - 0.07*dy
+   		text = strmid(strtrim(sigall,2),0,4)+' ms!u-1!n'
+   		if timebin gt 1./24 then if szfac eq 1 then if nosig eq 0 then XYOUTS,xo,yo,'!6RMS!d ALL!n ='+ text,size=1.5*szfac
+   		print,format='(a15,F6.2,a4)','Sigma (all) = ',sigall,' m s!u-1!n'
+	endif  ;if not keyword_set(noplot) 
+ 
+;TIME BINS
+    IF timebin eq 0 then timebin = 1.e-8    ;tiny time bin
+;;;; timebin   
+;    IF timebin gt 0 then begin
+    	ct=0
+    	WHILE ct lt numobs do begin
+    		ind = where(xarr ge xarr(ct) and xarr lt xarr(ct)+timebin, num) 
+    		wt = (1./errvel(ind))^2.       ;weights based in internal errors
+       		wt = wt/total(wt)              ;normalized weights
+       		; dave - this wt is always = 1.0 (see errvel calc. in vel.pro)
+        	if ct eq 0 then catday = [max(cat(ind))] $
+	  			else catday = [catday,max(cat(ind))]
+       		if ct eq 0 then nav = [n_elements(ind)] $
+	  			else nav = [nav,n_elements(ind)]
+       		if ct eq 0 then dates = [total(xarr(ind)*wt)]      $
+	  			else dates = [dates,total(xarr(ind)*wt)]
+       		if ct eq 0 then speed = [total(vel(ind)*wt)] $
+	  			else speed=[speed,total(vel(ind)*wt)]
+       		if ct eq 0 then counts = [total(av(ind).cts)] $
+	  			else counts = [counts,total(av(ind).cts)]
+       		if ct eq 0 then cai = [total(cair(ind)*wt)] $
+	  			else cai=[cai,total(cair(ind)*wt)]
+       		if ct eq 0 then begin
+          		inverr=0. & for qq=min(ind),max(ind) do inverr=inverr+1./errvel(qq)^2.
+	  			errv = [sqrt(1./inverr)]
+       		endif else begin
+          		inverr=0. & for qq=min(ind),max(ind) do inverr=inverr+1./errvel(qq)^2.
+	  			errv = [errv,sqrt(1./inverr)]
+       		endelse
+       		ct=ct+num
+     	END  ;while
+
+     	badgate=0
+;;;errcut
+     	if n_elements(errcut) eq 1 then if errcut gt 0. then begin
+			i0=where(dates lt prepost,ni0)
+			; if ni0 eq 0 then return
+        	if ni0 gt 1 then begin
+        		dumz=where(errv ge (errcut*median(errv(i0))) and dates lt prepost)
+				if dumz(0) ge 0 then begin
+	   				baddate=dates(dumz)
+	   				badspeed=speed(dumz)
+	   				baderrv=errv(dumz)
+	   				badgate=1
+        		endif
+        		dumx=where(errv lt (errcut*median(errv(i0))) and dates lt prepost)
+				dates0=dates(dumx)
+				speed0=speed(dumx)
+				errv0=errv(dumx)
+				counts0=counts(dumx)
+				cai0=cai(dumx)
+			endif ;ni0 gt 1
+
+			i1=where(dates gt prepost,ni1)
+			if ni1 gt 1 then begin
+        		dumz=where(errv ge (errcut*median(errv(i1))) and dates gt prepost)
+				if dumz(0) ge 0 then begin
+	   				if n_elements(baddate) gt 0 then baddate=[baddate,dates(dumz)] $
+	      				else baddate=dates(dumz)
+	   				if n_elements(badspeed) gt 0 then badspeed=[badspeed,speed(dumz)] $
+	      				else badspeed=speed(dumz)
+	   				if n_elements(baderrv) gt 0 then baderrv=[baderrv,errv(dumz)] $
+	      				else baderrv=errv(dumz)
+	   				badgate=1
+        		endif  ;dumz gt 0
+        		dumx=where(errv lt (errcut*median(errv(i1))) and dates gt prepost)
+				if n_elements(dates0) gt 0 then dates=[dates0,dates(dumx)] else dates=dates(dumx)
+				if n_elements(speed0) gt 0 then speed=[speed0,speed(dumx)] else speed=speed(dumx)
+				if n_elements(errv0) gt 0 then errv=[errv0,errv(dumx)] else errv=errv(dumx)
+				if n_elements(counts0) gt 0 then counts=[counts0,counts(dumx)] else counts=counts(dumx)
+				if n_elements(cai0) gt 0 then cai=[cai,cai(dumx)] else cai=cai(dumx)
+				endif else begin  ;if ni1 gt 1
+        			if n_elements(dates0) eq 0 then return
+        			dates=dates0
+        			speed=speed0
+        			errv=errv0
+        			counts=counts0
+        			cai=cai0
+    			endelse
+		endif  ;errcut
+	;endif ;timebin gt 0
+
+    dumcf=replicate(av(0),n_elements(dates))
+    dumcf.jd     = dates + timetrim
+    dumcf.mnvel  = speed
+    dumcf.errvel = errv
+    dumcf.cts    = counts
+    sigbin = stddev(speed)
+
+	if keyword_set(fitline) then begin
+   		coef=poly_fit(xarr,vel,3)
+   		ny=poly(xarr,coef)
+   		oplot,xarr,ny,linesty=2,col=222,thick=3
+   		rms2fit=stddev(ny-vel)
+   		x1=0.6*(max(xr))
+   		strxxx=strmid(strcompress(string(rms2fit),/remove_all),0,4)
+   		xyouts,xo,yo-0.15*dy,'!6 RMS to line: '+strxxx, size=1.5*szfac
+		; xyouts,x1,-80,/data,'!6 RMS to line: '+strxxx, size=1.6
+	endif
+
+	if not keyword_set(noplot) then if nobox lt 1 then begin 
+       IF keyword_set(nocolor) then OPLOT, dates, speed, psym=6, symsize=1.3*szfac, thick=2 $
+           ELSE OPLOT, dates, speed, psym=6, symsize=1.1*szfac, thick=2
+       If badgate eq 1 then begin
+          IF keyword_set(nocolor) then OPLOT, baddate, badspeed, psym=7, symsize=1.3*szfac, thick=2 $
+           	ELSE OPLOT, baddate, badspeed, psym=7, symsize=1.3*szfac, thick=2
+
+	   	  for bb=0,n_elements(baddate)-1 do begin
+	      	bdd=[baddate(bb),baddate(bb)]
+	      	bvv=[badspeed(bb)-baderrv(bb),badspeed(bb)+baderrv(bb)]
+            IF keyword_set(nocolor) then OPLOT, bdd, bvv $
+            	ELSE OPLOT, bdd, bvv, thick=2,symsize=0.5*szfac
+           endfor
+       endif  ;badgate
+	 	ind=where(catday eq 1,nind)
+	 	if nind gt 0 then if keyword_set(nocolor) then $
+	   	OPLOT, dates(ind), speed(ind), psym=6, symsize=1.3*szfac, thick=2 ELSE $
+           OPLOT, dates(ind), speed(ind), psym=6, symsize=1.3*szfac, thick=2
+       	yo = yo - 0.05*dy
+       	text = strmid(strtrim(sigbin,2),0,4)+' ms!u-1!n'
+       	;if timebin lt 1./24 then if nosig eq 0 then XYOUTS,xo,yo,'!6RMS!d BIN!n ='+ text,size=1.5*szfac
+       	if nosig eq 0 then XYOUTS,xo,yo,'!6RMS ='+ text,size=1.5*szfac
+       	print,format='(a15,F6.2,a4)','Sigma (binned) = ',sigbin,' m/s'
+	endif      ; if not keyword_set(noplot), nobox lt 1 
+
+	openw,4,'junk.dat'
+		for i=0,n_elements(speed)-1 do printf,4,dates(i),speed(i),errv(i)
+	close,4 
+
+    if n_elements(errv) lt 2 then begin
+	 	errv = av.errvel                         ;error in the mean
+	 	dates = xarr 
+	 	speed = av.mnvel
+	 	if n_elements(catday) ne n_elements(speed) then catday=fix(speed*0)
+    endif
+
+
+	if not keyword_set(noplot) then begin
+      	FOR j=0,n_elements(errv)-1 do begin
+        	err = errv(j)                           ;error in the mean
+        	x = [dates(j), dates(j)]
+        	bar = [speed(j)-err, speed(j)+err]
+        	if nobox ne 2 then begin
+	   			if keyword_set(nocolor) then oplot,x, bar $
+               		else oplot,x, bar
+           		if catday(j) eq 1 then $
+	       		if not keyword_set(nocolor) then oplot,x, bar
+        	endif
+      	ENDFOR
+    	yo = yo - 0.08*dy
+    	xout_text = Greek('sigma')+'!dINT!n = '+strmid(strtrim(median(errv),2),0,4)+' ms!u-1!n'
+     	;if nosig eq 0 then XYOUTS,xo,yo,'!9s!6!d INT!n ='+ text,size=1.7*szfac
+     	if nosig eq 0 then XYOUTS,xo,yo,xout_text,size=1.7*szfac
+	endif
+ 
+	if keyword_set(ps) or keyword_set(lzr) then ps_close
+	
+return
+end
+
+
+
