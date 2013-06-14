@@ -59,13 +59,14 @@
 ;     the "cdxb" file
 ;
 ; Written by Debra Fischer, SFSU, Nov 2007
+; John Johnson, IfH, May 2008 (implementation of IDL Pointers)
 ;
 ; OUTSTANDING: 
 ;   IS VEL UPDATED FOR SEQUENTIAL GUESSES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PRO DOP_MAIN, starname, dopenv, obsnm=obsnm, pass=pass, tag=tag, nso=nso, $
-              vdtag=vdtag, pix_filt = pix_filt, $
+              vdtag=vdtag, pix_filt = pix_filt, smdisp=smdisp, smwav=smwav, $
               iod_soln=iod_soln, plot=plot, tmpl_dir=tmpl_dir, avg=avg, vdavgnm=vdavgnm,  $
               yrmo=yrmo, demo=demo, cdnear_name=cdnear_name, verbose=verbose, $
               lm=lm, crosscorl=crosscorl
@@ -83,30 +84,37 @@ PRO DOP_MAIN, starname, dopenv, obsnm=obsnm, pass=pass, tag=tag, nso=nso, $
  lp = 2                      ; last Doppler pass par's 
 
 ; default setup
- if ~keyword_set(demo) then demo=0
- if ~keyword_set(verbose) then verbose=0
- if ~keyword_set(lm) then lm='mpf'
+if ~keyword_set(demo) then demo=0
+if ~keyword_set(verbose) then verbose=0
+if ~keyword_set(lm) then lm='mpf'
+if ~keyword_set(avg) then avg=0
+if ~keyword_set(cdnear_name) then cdnear_name=0
 
- if keyword_set(nso) then iss_nm = 'nso' 
- if keyword_set(nso) then iss_bc = 0.0d 
+if keyword_set(nso) then iss_nm = 'nso' 
+if keyword_set(nso) then iss_bc = 0.0d 
 
- rootfile=starname+'_'+obsnm  ; used for naming the output files
- savfile1='cd'+tag+'a'+rootfile   ;chunk_arr structure for 1st pass
- savfile2='cd'+tag+'b'+rootfile   ;chunk_arr structure for 2nd pass
- vdnm='vd'+tag+rootfile
+rootfile=starname+'_'+obsnm  ; used for naming the output files
+savfile1='cd'+tag+'a'+rootfile   ;chunk_arr structure for 1st pass
+savfile2='cd'+tag+'b'+rootfile   ;chunk_arr structure for 2nd pass
+vdnm='vd'+tag+rootfile
 
- c_light = dopenv.c_light
+c_light = dopenv.c_light
 ; COLORS FOR PLOTS
- loadct,39, /silent
- !p.background=255
- !p.color=1
+loadct,39, /silent
+!p.background=255
+!p.color=1
 
 ; GRAB VARIABLES FROM THE DOPENV STRUCTURE
 ; RENAME COMMON PATHS, FILES, INITIAL PSF DESCRIPTION
  files=dopenv.files_dir      ; e.g., /tous/mir1/files/
 
- if (pass eq 1) then begin
-	print,'********************** FIRST PASS **************************'
+;create the ccd mask to down weight bad regions:
+ccd_mask = dop_ccd_mask(dopenv=dopenv)
+
+
+
+if (pass eq 1) then begin
+   print,'********************** FIRST PASS **************************'
 
   ; RETURN INITIAL CHUNK STRUCTURE 
   ; INITIAL WAVELENGTH SOLN AND PSF ARE FROM THE I2 OBSERVATION
@@ -118,22 +126,23 @@ PRO DOP_MAIN, starname, dopenv, obsnm=obsnm, pass=pass, tag=tag, nso=nso, $
 	   if keyword_set(iss_nm) then restore, dopenv.files_dir+iss_nm ; restore the ISS
 ;          test=where(tag_names(dsst) eq 'W0',ntest)  & if ntest gt 0 then iss=dsst
 	endif
-	if ~keyword_set(cdnear_name) then dop_chunk_setup, dopenv, chunk_arr, obs_info, $
-		tag=tag, vdtag=vdtag, demo=demo, avg=avg, vdavgnm=vdavgnm, verbose=verbose, $
-		crosscorl=crosscorl, tmpl_dir=tmpl_dir, yrmo=yrmo
-	if keyword_set(cdnear_name) then dop_chunk_setup, dopenv, chunk_arr, obs_info, $
+	dop_chunk_setup, dopenv, chunk_arr, obs_info, $
 		tag=tag, vdtag=vdtag, demo=demo, avg=avg, vdavgnm=vdavgnm, verbose=verbose, $
 		crosscorl=crosscorl, tmpl_dir=tmpl_dir, yrmo=yrmo, cdnear_name=cdnear_name
  
+    
 	nchunks=n_elements(chunk_arr.ordt) 
   ; CH-LOOP: ONE CHUNK AT A TIME... 
    ;if keyword_set(yrmo) then avg=1 else avg=0
    for ch = 0, nchunks - 1 do begin
 	  chunk = chunk_arr[ch]
 
-	  chk_filt=filt[chunk.pixob:chunk.pixob+dopenv.n_pix-1, chunk.ordt]
+	  ;chk_filt=filt[chunk.pixt:chunk.pixt+dopenv.n_pix-1, chunk.ordt]
+	  chk_filt = ccd_mask[chunk.pixt:chunk.pixt+dopenv.n_pix-1, chunk.ordt]
+	  ;stop
 	  mod_chunk = dop_marq(chunk, dopenv, ch, pass=pass, chunk_arr=chunk_arr, $
-						   demo=demo, verbose=verbose, lm=lm, pfilt=chk_filt, avg=avg) 
+						   demo=demo, verbose=verbose, lm=lm, smdisp=smdisp, $
+						   smwav=smwav,pfilt=chk_filt, avg=avg) 
 	; UPDATE CHUNK WITH MODEL PAR'S, VEL, FIT
 	  chunk = mod_chunk   
 	  chunk_arr[ch] = chunk
@@ -152,9 +161,9 @@ if (pass eq 2) then begin
 
    for i=0, nchunks - 1 do begin
 	  chunk=chunk_arr[i]
-	  chk_filt=filt[chunk.pixob:chunk.pixob+dopenv.n_pix-1, chunk.ordt]
+	  chk_filt=filt[chunk.pixt:chunk.pixt+dopenv.n_pix-1, chunk.ordt]
 	  mod_chunk = dop_marq(chunk, dopenv, i, pass=pass, chunk_arr=chunk_arr, $
-			       demo=demo, verbose=verbose, lm=lm, pfilt=chk_filt) 
+		demo=demo, verbose=verbose, lm=lm, pfilt=chk_filt) 
 
 	; UPDATE CHUNK AND VD_ARR WITH MODEL PAR'S, VEL, FIT
 	  chunk = mod_chunk 
