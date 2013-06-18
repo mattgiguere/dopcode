@@ -3,8 +3,8 @@ pro dr_i2, tag=tag, date=date, avg=avg, demo=demo, psfmod=psfmod, vdavgnm=vdavgn
 
 year = '20'+strmid(date,0,2)
 yrmo = strmid(date,0,4)
-;if ~keyword_set(tag) then tag='adg'
-;if ~keyword_set(mode) then mode='narrow_slit'
+if ~keyword_set(tag) then tag='adg'
+if ~keyword_set(mode) then mode='narrow_slit'
 
 if year ne '2011' then begin
 	restore,'/tous/mir7/logstructs/'+year+'/'+date+'log.dat'

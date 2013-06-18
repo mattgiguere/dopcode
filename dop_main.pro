@@ -74,7 +74,6 @@ PRO DOP_MAIN, starname, dopenv, obsnm=obsnm, pass=pass, tag=tag, nso=nso, $
  iss_nm=dopenv.iss_nm
  iss_bc=dopenv.iss_bc
  iss_obnm=dopenv.iss_obnm
- restore,dopenv.pfilt_file 
  if ~keyword_set(smdisp) then smdisp=0  
  if ~keyword_set(smwav) then smwav=0
  if ~keyword_set(vdtag) then vdtag=tag
@@ -108,10 +107,14 @@ loadct,39, /silent
 ; RENAME COMMON PATHS, FILES, INITIAL PSF DESCRIPTION
  files=dopenv.files_dir      ; e.g., /tous/mir1/files/
 
+;old CCD mask:
+;restore,dopenv.pfilt_file 
+
 ;create the ccd mask to down weight bad regions:
 ccd_mask = dop_ccd_mask(dopenv=dopenv)
 
-
+;now to mask out regions with telluric contamination:
+ccd_mask = dop_telluric_mask(dopenv=dopenv, mask=mask)
 
 if (pass eq 1) then begin
    print,'********************** FIRST PASS **************************'

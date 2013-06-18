@@ -1,21 +1,27 @@
 ;+
 ;
 ;  NAME: 
-;     dop_ccd_mask
+;     dop_telluric_mask
 ;
 ;  PURPOSE: 
 ;   
 ;
 ;  CATEGORY:
-;      CHIRON
+;      DOPCODE
 ;
 ;  CALLING SEQUENCE:
 ;
-;      dop_ccd_mask
+;      ccd_mask = dop_telluric_mask(dopenv=dopenv)
 ;
 ;  INPUTS:
+;		DOPENV: The Doppler Code environmental structure
 ;
 ;  OPTIONAL INPUTS:
+;		MASK: Input this if there is already an array of the proper 
+;			dimensions that you want to start with, otherwise it will
+;			start with a clean slate. This was intended for input from
+;			the mask that was already created from DOP_CCD_MASK that 
+;			masks out bad regions on the detector.
 ;
 ;  OUTPUTS:
 ;
@@ -24,18 +30,29 @@
 ;  KEYWORD PARAMETERS:
 ;    
 ;  EXAMPLE:
-;      dop_ccd_mask
+;      ccd_mask = dop_telluric_mask(dopenv=dopenv, mask=mask)
 ;
 ;  MODIFICATION HISTORY:
-;        c. Matt Giguere 2013.04.13 11:32:01
+;        c. Matt Giguere 2013.06.13 12:06:57
 ;
 ;-
-function dop_ccd_mask, $
-startpixel, $
-endpixel, $
-nord, $
-dopenv = dopenv
+function dop_telluric_mask, $
+dopenv=dopenv, $
+mask=mask
 
+angstrom = '!6!sA!r!u!9 %!6!n'
+!p.color=0
+!p.background=255
+loadct, 39, /silent
+usersymbol, 'circle', /fill, size_of_sym = 0.5
+
+;read in the B star spectrum that'll be used for the 
+;telluric mask:
+telim = readfits(dopenv.telluricfn, hd)
+telspec = reform(telim[1,*,*])
+telwav = reform(telim[0,*,*])
+
+;now read in the flat:
 rdsk, flat, dopenv.flatname
 normflat = reform(flat[*,*,0])
 flatdims = size(normflat, /dim)
@@ -43,11 +60,10 @@ ordlength = flatdims[0]
 
 ;now rotate 180 degrees to be the same orientation as the images:
 normflat = rotate(normflat, 2)
+flatmod = rotate(reform(flat[*,*,1]),2)
 
-mask = normflat * 0d + 1d
-;chunk.pixt:chunk.pixt+dopenv.n_pix-1, chunk.ordt, dopenv=dopenv
-;ord=0
-;plot, normflat[*,ord], /xsty, /ysty, title=ord & ord++
+stop
+if ~keyword_set(mask) then mask = normflat * 0d + 1d
 
 ;orders 0-*: 
 threshold=0.5
@@ -76,4 +92,10 @@ endfor
 ;  endfor
 ;stop
 return, mask
-end;dop_ccd_mask.pro
+
+
+
+
+
+stop
+end;dop_telluric_mask.pro

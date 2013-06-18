@@ -35,7 +35,7 @@ FUNCTION DOP_INIT, obsnm, iss_nm, iss_bc, iss_obnm = iss_obnm, $
                 decker = decker, dpad = dpad, n_wcof = n_wcof, xcorl_lambda = xcorl_lambda, $
                 xcorl_pix1=xcorl_pix1, xcorl_ord=xcorl_ord, $
                 xcorl_shiftrange=xcorl_shiftrange,xcorl_npix=xcorl_npix,$
-                file_ext = file_ext
+                file_ext = file_ext, flatname=flatname, telluricfn=telluricfn
 
    restore, bary_file             ; Restores bcat
    xbc = where(bcat.obsnm eq obsnm, nxbc) 
@@ -101,7 +101,9 @@ FUNCTION DOP_INIT, obsnm, iss_nm, iss_bc, iss_obnm = iss_obnm, $
              psfbsplnplaces: [0,30,45,50,53,56,59,61,64,67,70,75,90,120], $ ;pix positions for the bspline model
              psfbsinvvar: dblarr(n_elements(psfpix)), $ ;inverse variance for bspline weighting
              psfbsord: 4, $ ; the order to use for the bspline
-             psfcntr: 1 $ ;1 if you want to center the PSF, 0 not to center
+             psfcntr: 1, $ ;2 to peak center, 1 to COM center, 0 not to center
+             flatname: '', $ ;needed for CCD mask
+             telluricfn: '' $;filename for creating the telluric mask
             }
    
   ; SUPERCEDE DEFAULT VALUES
@@ -138,6 +140,8 @@ FUNCTION DOP_INIT, obsnm, iss_nm, iss_bc, iss_obnm = iss_obnm, $
    if n_elements(xcorl_shiftrange) gt 0 then dopenv.xcorl_shiftrange = xcorl_shiftrange
    if n_elements(obs_dir) gt 0 then dopenv.obs_dir =  obs_dir
    if n_elements(file_ext) eq 0 then dopenv.file_ext = file_ext
+   if keyword_set(flatname) then dopenv.flatname = flatname
+   if keyword_set(telluricfn) then dopenv.telluricfn = telluricfn
 
    return, dopenv  
 
