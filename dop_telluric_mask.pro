@@ -62,7 +62,7 @@ ordlength = flatdims[0]
 normflat = rotate(normflat, 2)
 flatmod = rotate(reform(flat[*,*,1]),2)
 
-stop
+;stop
 if ~keyword_set(mask) then mask = normflat * 0d + 1d
 
 ;orders 0-*: 

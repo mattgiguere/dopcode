@@ -119,6 +119,9 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
 			bestnorm=bestnorm, perror=perror, $
 			yfit=syn_fit, weight=wt, status=status,/quiet)
 
+    ; STATUS contains the error_code from dop_fit.pro 
+    ;if status lt 0 and status gt -7 then stop
+
 		xnan=where(finite(syn_fit,/nan) ne 0,nxnan)
 		
 		; NEWPAR LOOKS OK - CHECK WEIGHTS WITH CHAUVENET TEST
@@ -163,6 +166,11 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
        		if chi gt chithresh and pass eq 1 and perturb eq 1 then begin
        			previous_psfpar1=(*chunk_arr[xfnd-1].free_par)[1].amp   ;17 psfpars from previous chunk
        			previous_psfpar2=(*chunk_arr[xfnd-2].free_par)[1].amp   ;17 psfpars from previous chunk
+       			zm1=(*chunk_arr[xfnd-1].free_par)[1].z           ;Doppler shift from previous chunk
+       			zm2=(*chunk_arr[xfnd-2].free_par)[1].z           ;Doppler shift from previous chunk
+       			zm3=(*chunk_arr[xfnd-3].free_par)[1].z           ;Doppler shift from previous chunk
+       			previous_z=double(mean([zm1,zm2,zm3]))                   ;Doppler shift from previous chunk
+;print,zm1,zm2,zm3
 				initwav = parinfo[0].value
 				tries = 0L
 				tries1 = 0L
@@ -182,6 +190,7 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
 				; TRY TO FIND A BETTER FIT
 				repeat begin
 					parinfo[4:20].value=previous_psfpar1
+					parinfo[2].value=previous_z
 					newpar=mpfitfun('dop_fit', x, y, parinfo=parinfo, $
                           	functargs=functargs, maxiter=200, /nan, $
                           	errmsg=errmsg, /iterstop, $
@@ -197,7 +206,7 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
                           				functargs=functargs, maxiter=200, /nan, $
                           				errmsg=errmsg, /iterstop, $
                           				bestnorm=bestnorm, perror=perror, $
-                          				yfit=syn_fit, weight=wt, status=status, /quiet)
+                          				yfit=syn_fit, weight=wt, status=quiet)
                           		tries1++
              			  	endrep until n_elements(newpar) eq n_elements(parinfo.value) or tries1 eq endloop 
              			  	if tries1 ge 40 then stop,'screwed!'
