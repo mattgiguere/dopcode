@@ -117,7 +117,7 @@ dopenv=ctio4k_init(obsnm, iss_nm, iss_bc, iss_obnm=obsnm, tag=iss_tag, $
    	   date=date, dpad=dsst_pad)
 
 ;dopcode_path='/Users/debrafischer/research/dop2/'
-dopcode_path='/Users/debrafischer/dop2/'
+dopcode_path='/Users/debrafischer/dop/'
 osamp=dopenv.osamp    ; e.g. 4 (integer)
 npix=dopenv.n_pix     ; e.g. 80  (integer)
 path=dopenv.obs_dir   ; e.g /tous/mir7/fitspec/120606/

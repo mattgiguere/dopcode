@@ -63,8 +63,33 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
     if pass eq 1 then begin   ;**** BEGIN PASS 1 ****
 
 	if dopenv.n_wcof eq 3 then ij=1 else ij=0
-         
+        
+       ; ******* QUICK REFINING PASS BEFORE PASS 1 ********                                                                                                 
+
+		if avg eq 0 then begin   ; start with a monthly-averaged PSF description 
+                npre_free=5+ij               ; wcof[0,1], z, offset, amp[0]                                                                                  
+                chunk.free_ind[0:4+ij,zp] = 1 ; all free                                                                                                     
+        endif
+        if avg eq 1 then begin
+                npre_free=4+ij               ; wcof[0,1], z, offset, amp[0]                                                                                  
+                chunk.free_ind[0:3+ij,zp] = 1 ; all free                                                                                                     
+                endif
+
+                ;;;;;;;;;;                                                                                                                                   
+        refine_ch = dop_pre(chunk, npre_free, dopenv, lm=lm, demo=demo, pfilt=pfilt, avg=avg)
+        chunk=refine_ch
+        ;;;;;;;;;;                                                                                                                                           
+
+        ;print,'Zeroth pass, PSF 0: ',(*chunk.free_par)[zp].amp[0]                                                                                           
+        if keyword_set(verbose) then begin
+                print,'Parameters after Pre-fit, before Pass 1: '
+                print,(*chunk.free_par)[zp].wcof[*]
+                print,(*chunk.free_par)[zp].z
+                print,(*chunk.free_par)[zp].amp[0]
+        endif
+ 
     	chunk.free_ind[0:n_elements(dopenv.psfpix)-1+4+ij,fp] = 1 ; all free
+    	chunk.free_ind[4]=0
     	if dopenv.iss_nm eq 'iod' then iod_flag = 1 else iod_flag = 0
     	parinfo=dop_parinfo(chunk, dopenv, pass=pass, iod_flag=iod_flag,osamp=dopenv.osamp)
     	chunk.fit[fp] = 100.
@@ -76,10 +101,6 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
 	endif  ;**** END SETUP FOR PASS 1 ****
 
       if pass eq 2 then begin   ;**** BEGIN PASS 2 ****
-    ; *** SMOOTH DISPERSION BEFORE PASS 1 - KEEP FREE  ***
-;         (*chunk.free_par)[1].wcof[1]=dop_smooth_disp(chunk, chunk_arr, pass=pass)  11/13/11
-;         (*chunk.free_par)[1].wcof[1]=dop_smooth(chunk, chunk_arr, pass=pass, /disp) 
-
           if dopenv.n_wcof eq 2 then ifree=[0,1,2,3]
           if dopenv.n_wcof eq 3 then ifree=[0,1,2,3,4]
           iod_flag = 0
@@ -290,6 +311,7 @@ FUNCTION DOP_MARQ, chunk, dopenv, pass=pass, ch_indx, chunk_arr=chunk_arr,$
        red_chi_sq = total(  wt * (syn_fit - (*chunk.sobs))^2 )
        red_chi_sq = red_chi_sq / dof
        chi = sqrt(red_chi_sq) 
+if chi eq 0.0 then chi = 99
 
        if pass eq 1 and n_elements(newpar) gt 5 then begin
           if dopenv.psfmod eq 'gaussian' then begin

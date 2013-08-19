@@ -1,11 +1,11 @@
-pro dr_iod_soln, obsnm, tag=tag, demo=demo, verbose=verbose, psfmod=psfmod, $
+pro dr_iod_soln, obsnm, tag=tag, demo=demo, verbose=verbose, mode=mode, psfmod=psfmod, $
 	ctio=ctio,ctio4k=ctio4k, keck=keck,lick=lick, date=date, yrmo=yrmo, avg=avg, $
 	vdavgnm=vdavgnm, cdnear_name=cdnear_name, shft_style=shft_style
 
 ; fischer nov08
      ;;these next 2 lines are observatory specific
       if keyword_set(ctio4k) then dopenv=ctio4k_init(obsnm,'iod', 0.0, tag=tag, $
-      	psfmod=psfmod, iss_obnm=obsnm, date=date, shft_style=shft_style) 
+      	mode=mode, psfmod=psfmod, iss_obnm=obsnm, date=date, shft_style=shft_style) 
       if keyword_set(ctio) then dopenv=ctio_init(obsnm,'iod', 0.0, iss_obnm=obsnm) 
       if keyword_set(keck) then dopenv=keck_init(obsnm,'iod', 0.0, iss_obnm=obsnm, tag=tag) 
       if keyword_set(lick) then dopenv=lick_init(obsnm,'iod', 0.0, iss_obnm=obsnm, tag=tag) 

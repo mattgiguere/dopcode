@@ -20,7 +20,7 @@ if ~keyword_set(yrmo) then yrmo='1207'
 if ~keyword_set(mode) then mode='narrow_slit'
 if ~keyword_set(psfmod) then psfmod='gaussian'
 year='20'+strmid(yrmo,0,2)
-cdbfile_path='/tous/mir7/files_df/'
+if file_test('/Users/debrafischer') then cdbfile_path = '/Volumes/LaCie/extra/mir7/files_df/' else cdbfile_path = '/tous/mir7/files_df/'
 
 ff=file_search('/tous/mir7/logstructs/'+year+'/'+yrmo+'*log.dat',count=count)
 cdb=' '  ;seed the string array
@@ -39,7 +39,7 @@ for j=0,count-1 do begin
    		obnm='a'+strcompress(log[x[i]].prefix,/rem)+'.'+strcompress(log[x[i]].seqnum,/rem)
    		;print,obnm
    		cdtmp='cd'+tag+'b'+strcompress(log[x[i]].object,/rem)+'_'+obnm
-   		filecheck=file_search('/tous/mir7/files_df/'+cdtmp,count=fcount)
+   		filecheck=file_search(cdbfile_path+cdtmp,count=fcount)
    		print,cdtmp, fcount
    		if fcount eq 1 then cdb=[cdb,cdtmp] 
    	endfor
@@ -100,10 +100,10 @@ nstack=n_elements(psfstack)         ;number of Bstars in the yrmo interval
 	endfor
 	if keyword_set(hdcopy) then ps_close
 	!p.multi=[0,1,1]
-stop
+
 ; medpsf[*,chunk] gives the median psf for a chunk
 ; err[*,chunk] gives the stddev uncertainties for each oversampled psf point 
-	savfile='SLSF_'+yrmo+'.dat'	
+	savfile='SLSF_'+mode+yrmo+'.dat'	
 	save, medpsf,errpsf,f=savfile
 
 if psfmod eq 'gaussian' then begin 
@@ -111,9 +111,18 @@ if psfmod eq 'gaussian' then begin
 ; store the amplitudes in a generic yrmo cdbfile 
 ; CRITICAL: must use the same psfpix and psfsig in ctio4k_init 
   osamp = 4
-  psfpix = [0.0, -4.0, -3.6, -3.0, -2.4, -1.8, -1.2, -0.8, -0.4, 0.4, 0.8,  1.2,  1.8,  2.4, 3.0, 3.6, 4.0]
-  psfsig = [1.05, 0.0,  0.8,  0.7,  0.7,  0.7,  0.7,  0.6,  0.5, 0.5, 0.6,  0.7,  0.7,  0.7, 0.7, 0.8, 0.0]
-  par =    [0.8,  0.0, 0.0, 0.001,0.003,0.006, 0.03, 0.11, 0.21, 0.21,0.11,0.03,0.007,0.002,0.001,0.0, 0.0]
+;  psfpix = [0.0, -4.0, -3.6, -3.0, -2.4, -1.8, -1.2, -0.8, -0.4, 0.4, 0.8,  1.2,  1.8,  2.4, 3.0, 3.6, 4.0]
+;  psfsig = [1.05, 0.0,  0.8,  0.7,  0.7,  0.7,  0.7,  0.6,  0.5, 0.5, 0.6,  0.7,  0.7,  0.7, 0.7, 0.8, 0.0]
+
+if mode eq 'narrow_slit' then begin
+    psfpix= [0.0, -4.8,-4.0, -3.2, -2.5, -1.8, -1.2, -0.8, -0.4, 0.4, 0.8, 1.2, 1.8, 2.5, 3.2, 4.0, 4.8]  
+  	psfsig= [0.65,  1.4, 1.4,  1.3,  1.1,  0.9,  0.8,  0.5,  0.4, 0.4, 0.5, 0.8, 0.9, 1.1, 1.3, 1.4, 1.4]
+endif
+if mode eq 'slit' then begin
+    psfpix= [0.0, -5.0,-4.3, -3.6, -2.8, -2.2, -1.6, -1.0, -0.6, 0.6, 1.0, 1.6, 2.2, 2.8, 3.6, 4.3, 5.0]  
+  	psfsig= [1.1,  1.6, 1.5,  1.4,  1.3,  1.0,  1.0,  0.8,  0.8, 0.8, 0.8, 1.0, 1.0, 1.3, 1.4, 1.5, 1.6]
+endif
+  par =    [psfsig[0],  0.0, 0.0, 0.001,0.003,0.006, 0.03, 0.11, 0.21, 0.21,0.11,0.03,0.007,0.002,0.001,0.0, 0.0]
 
   npar=n_elements(par) 
 
@@ -136,9 +145,10 @@ if psfmod eq 'gaussian' then begin
    for i=0,npar-1 do begin
    		parinfo[i].parname = names[i]
    	    parinfo[i].value = par[i]
-   endfor   
-   parinfo[0].limited=[1,1] 
-   parinfo[0].limits=[0.68,1.2]
+   endfor  
+   parinfo[0].fixed=1 
+parinfo[1:16].limited=[1,1]
+	parinfo[1:16].limits=[-1,1]
 
 	n_osamp=15.*osamp
     xarr = (dindgen(2*n_osamp + 1) - n_osamp) / double(osamp) ; 121 elements
@@ -158,10 +168,6 @@ for i =0,n_chunks-1 do begin   ;i is chunk number
 	err_y=errpsf[*,i] ;stddev of median PSF for a chunk
 	yobs=medpsf[*,i]  ;median PSF for a chunk
 	; fitted Gaussian amplitudes 
-	parinfo[0].value=amp0[i]
-	lim=limit_amp0[0]>0.01
-	parinfo[0].limits=[amp0[i]-lim, amp0[i]+lim]
-	;FUNCTION DOP_PRE_PSF, psfpar, dopenv=dopenv, cntr=cntr
 	newpar = mpfitfun('sum_gauss', xarr, yobs, parinfo=parinfo, functargs=functargs,$
 					err=err_y, yfit=ip,/quiet)
 	print,i,' ',newpar[0]				
@@ -252,8 +258,8 @@ stop
 vdav=vd
 chunk_avg=chunk_arr
  
-vdoutfile='vd'+tag+'AVG_'+yrmo
-cdboutfile='cd'+tag+'bAVG_'+yrmo
+vdoutfile='vd'+tag+'AVG_'+mode+yrmo
+cdboutfile='cd'+tag+'bAVG_'+mode+yrmo
 save,vdav,f=cdbfile_path+vdoutfile
 save,chunk_avg,f=cdbfile_path+cdboutfile
 

@@ -1,0 +1,45 @@
+running the doppler code for Lick stars (old CCD)
+Need: reduced spectra, updated bcvel.ascii and bcvel.dat files 
+
+
+I. make the template
+   1. run the bstar observations through the Doppler code
+      IDL> dr_iod_soln, 'ri66.72',tag='b',/lick,/demo (demo is optional plotting)
+      (for one single file) or
+      IDL> dr_iod_loop, tag='b', run='ri66', observatory='lick'
+      (for all Bstar observations in run 'ri66')
+
+
+   2. create a dsst
+      a.  If there are multiple, consecutive template observations of a single star,
+          then co-add the observations before running dsst.pro. 
+	  - In the iss/ directory, run dr_rayclean. you first have to manually 
+   	    edit the program to list all of the obsnm's to co-add.
+	  - IDL> dr_rayclean  (creates an hd+starname+.dat file) 
+	  
+      b. In the iss/ directory, edit dsst.pro with dsstnm, starname, vd (Bstar) names 
+         and in the middle of the program, the vd and cdb for the bstar.
+	 - Note: if you co-added several observations in rayclean, then comment out 
+ 	   the readfits and restore the file instead. 
+
+II. run the Doppler analysis 
+   1. IDL> dr_obs_loop,tag='b',star='61064' (/demo is optional)
+
+
+One time things we did: 
+1. create the doppler directory and copy /home/fischer/dop2/* 
+2. edited root path in lick_init.pro
+3. added the doppler directory to your IDL_PATH (with priority)
+
+
+Wednesday: Lick Doppler code (old dewar) 
+      Kelsey: get list of all lateFs templates and run dsst.pro
+      Kelsey: get list of all stars with I2 observations and run dr_obs_loop
+      Debra: should the chunk sizes be increased because of higher vsini 
+             test with 80-pix chunks and 160-pix chunks 
+      Debra: improve the dop_chunk_setup code
+      Debra: SME-iter running on the Lick spectra
+Thursday: Lick Doppler code (dewar 4) 
+Friday: continue with D-code
+
+

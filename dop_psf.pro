@@ -54,19 +54,23 @@ FUNCTION DOP_PSF, psfpar, dopenv=dopenv, xarr=xarr, cntr=cntr, plot=plot
 
   if shft_style eq 1 then begin
   ; SHIFT TO CENTER - CHECK THIS - MAY WANT TO ELIMINATE!
-    fwhm=0.3*max(ip)  ;pad it a bit so 0.4 instead of 0.5
-    x2=where(ip ge fwhm and abs(xarr) lt 6., nx2) ; peak points +/- from center
-	if nx2 lt 3 then print,'not enough pixels to center the psf'
-	del=60.-x2[0]
-    if nx2 ge 3 then begin                            ; shift to center
-       dd = where(ip[x2] eq max(ip[x2]))  &  dd=dd[0]
-       ndd=n_elements(dd)
-       if ndd le 2  then dd=dd[0]
-       if ndd gt 2 then dd=dd[fix(ndd/2.)]
-       cntr=xarr[x2[dd]]  
-       if abs(cntr) ge 0.1 and abs(cntr) lt 1.2 then $
-          ip = dop_gauss(psfpar, dopenv, xarr=xarr, cntr=cntr)
-    endif                       ; shift to center
+  	xpk=where(ip eq max(ip),nxpk)
+	if nxpk le 2 then cntr=xarr[xpk[0]]
+	if nxpk eq 3 then cntr=xarr[xpk[1]]
+	ip = dop_gauss(psfpar, dopenv, xarr=xarr, cntr=cntr)
+    ;fwhm=0.3*max(ip)  ;pad it a bit so 0.4 instead of 0.5
+    ;x2=where(ip ge fwhm and abs(xarr) lt 6., nx2) ; peak points +/- from center
+	;if nx2 lt 3 then print,'not enough pixels to center the psf'
+	;del=60.-x2[0]
+    ;if nx2 ge 3 then begin                            ; shift to center
+    ;   dd = where(ip[x2] eq max(ip[x2]))  &  dd=dd[0]
+    ;   ndd=n_elements(dd)
+    ;   if ndd le 2  then dd=dd[0]
+    ;   if ndd gt 2 then dd=dd[fix(ndd/2.)]
+    ;   cntr=xarr[x2[dd]]  
+    ;   if abs(cntr) ge 0.1 and abs(cntr) lt 1.2 then $
+    ;      ip = dop_gauss(psfpar, dopenv, xarr=xarr, cntr=cntr)
+    ;endif                       ; shift to center
  endif
 
  if shft_style eq 2 then begin 

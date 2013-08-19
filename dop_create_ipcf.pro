@@ -38,7 +38,8 @@ pro dop_create_ipcf, tag=tag, update=update, list=list, goodfit=goodfit, $
      read,'which observatory (ctio, ctio4k, lick, keck): ', observatory
   endif
 
-root_path='/tous/mir7/dop/'
+;root_path='/tous/mir7/dop/'
+root_path = '/home/fischer/dop/'
 if file_test('/Users/matt/') then root_path='/Users/matt/projects/dopcode/'
 if file_test('/Users/debrafischer/') then root_path='/Users/debrafischer/dop1/'
   

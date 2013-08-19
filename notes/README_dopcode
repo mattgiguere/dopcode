@@ -1,0 +1,43 @@
+
+*****I. get an approximate wavelength soln for the I2 observations.
+1. get the thid file for that night and that slit
+2. run dop_bearings to generate an initial vd file (wavelength and PSF guess)
+    IDL> dop_bearings,obsnm='achi120710.1137',$
+         wavfile='/tous/mir7/thid/wavfile/ctio_achi120710.1001.dat',tag='adg',$
+         observatory='ctio4k',date='120710',wid=1.2
+3. create the ipcf file
+    IDL> dop_create_ipcf,tag='ad',observatory='ctio4k',goodfit=5
+
+*****II. run Doppler code on bookend iodines
+1. run one Bstar iodine with the dop_bearings solution, then delete the dop_bearings soln, 
+   update dop_create_ipcf and run dr_iod_soln:
+    IDL> dop_create_ipcf,tag='adg',observ='ctio4k'
+    IDL> dr_iod_soln,'achi120710.1138',tag='adg',/ctio4k,date='120710'
+2. run all of the bookend iodine models with dr_iod_soln
+3. run the template  
+    IDL> tag='adg'  
+    IDL> vd_array1 = 'vd'+tag+'HR8425_achi120710.'+['1137','1138','1139']
+    IDL> vd_array2 = 'vd'+tag+'HR472_achi120710.'+['1143','1144','1145']
+    IDL> vd_array = [vd_array1, vd_array2]
+    IDL> dop_dsst, starnm='10700',coadded_spec='hd10700_achi120710.dat', date='120710', $
+    	 obsnm='achi120710.1143', observatory='ctio4k', vdtag='adg', vd_array=vd_array, $
+    	 iss_tag='adg' ;,/mov
+ 
+*****III. run the Bstar iodines  
+1. run n-s Bstar iodines for a given night (multiplexing)
+	IDL> dr_i2,tag='adg',date='120710'   ;finds all narrow slit bstars for that night
+2. run n-s Bstar observations for a given yrmo	
+	IDL> dr_i2_all, tag='adg',yrmo='1206' ;finds and runs all n-s bstars for the month
+	
+*****IV. run the Bstar iodines  
+1. run all n-s observations for a given star on a given night (multiplexing) 
+	IDL> dr_obs, star='10700',tag='adg',date='120710',$
+		 dsst_nm='dsst10700adg_achi120710.1141.dat'
+2. run all n-s observations for a given star in a given yrmo (clean-up or linear)
+	IDL> dr_obs_all, star='10700',tag='adg',yrmo='1207',$
+		 dsst_nm='dsst10700adg_achi120710.1141.dat'
+
+*****V. deriving a monthly median SLSF
+1. take the median PSF for all Bstar observations
+	IDL> dop_bstar_psf,yrmo='1207'   
+	IDL> restore,'SLSF_'+yrmo+'.dat'	;mpsf, err                              

@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PRO DOP_BEARINGS, obsnm=obsnm, wavfile=wavfile, tag=tag, observatory=observatory,$
-     inp_vd=inp_vd,delta=delta, rev_thid=rev_thid, wid=wid, date=date
+     inp_vd=inp_vd,delta=delta, mode=mode, rev_thid=rev_thid, wid=wid, date=date
 
 ; fischer oct 2009
 ; set up keck vd structure for the first time
@@ -52,12 +52,15 @@ PRO DOP_BEARINGS, obsnm=obsnm, wavfile=wavfile, tag=tag, observatory=observatory
 ;   dop_bearings,obsnm='ri67.220',wavfile='/home/fischer/thid/lick_ri67.214.dat', tag='e',observ='lick'
 ;
 
+if mode eq 'slit' then wid=1.95
+if mode eq 'narrow_slit' then wid=1.5
+
 if ~keyword_set(observatory) then begin
    observatory=''
    read,'which observatory (lick, keck, het, ctio, ctio4k): ',observatory
 endif
 
-     if observatory eq 'ctio4k' then dopenv=ctio4k_init(obsnm, 'iod', 0.0, iss_obnm=obsnm,tag=tag,date=date) 
+     if observatory eq 'ctio4k' then dopenv=ctio4k_init(obsnm, 'iod', 0.0, mode=mode, iss_obnm=obsnm,tag=tag,date=date) 
      if observatory eq 'ctio' then dopenv=ctio_init(obsnm, 'iod', 0.0, iss_obnm=obsnm,tag=tag) 
      if observatory eq 'keck' then dopenv=keck_init(obsnm,  'iod', 0.0, iss_obnm=obsnm,tag=tag) 
      if observatory eq 'lick' then dopenv=lick_init(obsnm,  'iod', 0.0, iss_obnm=obsnm,tag=tag) 

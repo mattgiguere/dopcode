@@ -1,0 +1,18 @@
+ssh to one of the computers 
+
+cd dop2
+screen -S dop1   
+~/idlnox
+batch_dop or batch_iod
+ctrl-a d    ;detach 
+
+screen -S dop2
+~/idlnox
+batch_dop, runNotes='centauri_dop1'
+ctrl-a d
+
+exit 
+
+; other commands
+screen -r screenName
+screen -list

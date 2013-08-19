@@ -19,17 +19,16 @@ if year eq '2011' then begin
 	sdir=date
 endif 
 
-
 if ~keyword_set(avg) then avg=0  ;don't use the average PSF
 for i=0,nx-1 do begin
    if year ne '2011' then begin
    	  	obnm='a'+strcompress(log[x[i]].prefix,/rem)+'.'+strcompress(log[x[i]].seqnum,/rem)
    		print,obnm
-   		bad=['achi120629.1107', 'achi130113.1120','achi130113.1121','achi130113.1122',$
-			'achi130504.1147']
-   		xx=where(obnm eq bad,nbad) 
-   		if nbad eq 0 then $
-   		dr_iod_soln, obnm,tag=tag,/ctio4k, date=date, avg=avg, psfmod=psfmod, $
+;   		bad=['achi120629.1107', 'achi130113.1120','achi130113.1121','achi130113.1122',$
+;			'achi130504.1147']
+;   		xx=where(obnm eq bad,nbad) 
+;   		if nbad eq 0 then $
+   		dr_iod_soln, obnm,tag=tag,/ctio4k, date=date, avg=avg, mode=mode, psfmod=psfmod, $
    			demo=demo, yrmo=yrmo, vdavgnm=vdavgnm
    endif
    if year eq '2011' then begin

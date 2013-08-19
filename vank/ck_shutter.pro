@@ -4,12 +4,12 @@ if ~keyword_set(vstnm) then vstnm='vst'+star+'.dat'
 restore,'vstbank/'+vstnm
  num=n_elements(cf3.obnm) 
 
-path='/tous/mir7/iodspec/' 
+path='/tous/mir7/fitspec/' 
 badobnm=''
 
 for i=0,num-1 do begin
    date=strmid(cf3[i].obnm, 4, 6)
-   rdsk,hd,path+date+'/'+cf3[i].obnm,2
+   hd=headfits(path+date+'/'+cf3[i].obnm+'.fits')
    ftime=sxpar(hd,'EXPTIME',count=fc) 
    emstart=sxpar(hd,'EMTIMOPN',count=es)
    emend=sxpar(hd,'EMTIMCLS',count=ee)

@@ -37,6 +37,10 @@ endif
 
 if star eq '128620' then dsst_nm = 'dsst128620adg_achi120606.1124.dat'
 if star eq '128621' then dsst_nm = 'dsst128621adg_achi120606.1135.dat'
+if star eq '20794' then dsst_nm = 'dsst20794adg_achi121104.1129.dat'
+if star eq '22049' then dsst_nm = 'dsst22049adg_achi121103.1143.dat'
+if star eq '156274' then dsst_nm = 'dsst156274adg_achi120819.1141.dat'
+if star eq '94683' then dsst_nm = 'dsst94683adg_achi120719.1118.dat'
 if star eq '10700' then dsst_nm = 'dsst10700adg_achi120710.1141.dat' 
 if ~keyword_set(dsst_nm) then begin
 	ans=''
@@ -49,19 +53,21 @@ for i=0,nx-1 do begin
    if year ne '2011' then begin
    		obnm='a'+strcompress(log[x[i]].prefix,/rem)+'.'+strcompress(log[x[i]].seqnum,/rem)
    		print,obnm
-   		bad=['achi120612.1122', 'achi120913.1122', 'achi120921.1117', 'achi120811.1173',$
-   			'achi120807.1167']
+   		bb='achi130514.'+strcompress(string(indgen(50)+1195),/rem)
+   		bad=[bb, 'achi120612.1122', 'achi120913.1122', 'achi120921.1117', 'achi120811.1173',$
+   			'achi120807.1167','achi130509.1119',$
+   			'achi130508.1169','achi130508.1170','achi130508.1171']
 		xx=where(obnm eq bad,nbad) 
 		if nbad eq 0 then $
    		dr_star, star=star,obsnm=obnm, tag=tag, date=date, yrmo=yrmo, dsst_nm=dsst_nm, $
    				demo=demo, avg=avg, vdavgnm=vdavgnm, cdnear_name=cdnear_name, $
-   				shft_style=shft_style, verbose=verbose, psfmod=psfmod
+   				mode=mode, psfmod=psfmod, shft_style=shft_style, verbose=verbose
    	endif
    	if year eq '2011' then begin
    		obnm='a'+strmid(bcat[x[i]].obsnm,1,strlen(bcat[x[i]].obsnm)-1)
    		print,obnm
    		dr_star, star=star,obsnm=obnm, tag=tag, date='', yrmo=yrmo, dsst_nm=dsst_nm, $
-   				 demo=demo, avg=avg
+   				mode=mode, psfmod=psfmod, demo=demo, avg=avg
 	endif 
 endfor
 

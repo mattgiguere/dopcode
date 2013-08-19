@@ -84,39 +84,39 @@ FUNCTION DOP_PSF_SMOOTH, chunk, order, pixel, pass=pass, $
   num=30                        ; num*osamp = range for psf
   xarr=findgen(num*osamp + 1)/ osamp - num/2
   nkernal=n_elements(xarr)
-  ip_array=fltarr(nkernal,nxsm)    ; e.g., ip(121,6)
+  ip_array=fltarr(nkernal,nxsm)    ; e.g., ip(121,9)
   ip_av=fltarr(nkernal)
 
   ; WEIGHT EACH OF THE CHUNK PSF'S 
   ; NOTE!!  THE "FREE" IP (TO BE AVERAGED) IS HARDWIRED 
   ;         AS [*,0] FOR THE FIRST PASS
 for i=0,nxsm-1 do begin
-  ip_one=chunk_sm[i].ip[*,1]
+  ip_one=chunk_sm[i].ip[*,1]  ;one of the nearest neighboring chunk psfs
 
-  if dopenv.psfmod eq 'gaussian' then begin
+ ; if dopenv.psfmod eq 'gaussian' then begin
   ;     ; SHIFT TO CENTER - CHECK THIS - MAY WANT TO ELIMINATE!
 ;  fwhm=0.5*max(ip_one)
 ;  xx=where(ip_one ge fwhm and abs(xarr) lt 5., nxx)   ; peak points
-  xx=where(ip_one eq max(ip_one), nxx)   ; peak points
+ ; xx=where(ip_one eq max(ip_one), nxx)   ; peak points
 ;  if nxx ge 3 then begin   ; shift to center
 ;	dd = where(ip_one[xx] eq max(ip_one[xx]))  &  dd=dd[0]
-   if nxx le 2 then cntr=xarr[xx[0]]  
-   if nxx eq 3 then cntr=xarr[xx[1]]
-	if abs(cntr) ge 0.1 and abs(cntr) lt 1.8 then begin
-	   if dopenv.psfmod eq 'gaussian' then begin
-		 ip_one = dop_psf((*chunk_sm[i].free_par)[fp].amp, dopenv=dopenv, xarr=xarr, cntr=cntr)
-	   endif;gaussian
-	   if dopenv.psfmod eq 'bspline' then begin
-              print, (*chunk_sm[i].free_par)[fp].amp[1:*]
-              ip_one = dop_psf_bspline((*chunk_sm[i].free_par)[fp].amp[1:*], dopenv=dopenv, xarr=xarr, cntr=dopenv.cntr)
-	   endif;bspline
-	endif; 0.1 < cntr < 1.2
-	if abs(cntr) ge 1.8 then begin  ;dump far-out IP's
-	   wt[i]=0.
-	   ip_one= chunk_ip
-	endif
+ ;  if nxx le 2 then cntr=xarr[xx[0]]  
+ ;  if nxx eq 3 then cntr=xarr[xx[1]]
+;	if abs(cntr) ge 0.1 and abs(cntr) lt 1.8 then begin
+;	   if dopenv.psfmod eq 'gaussian' then begin
+;		 ip_one = dop_psf((*chunk_sm[i].free_par)[fp].amp, dopenv=dopenv, xarr=xarr, cntr=cntr)
+;	   endif;gaussian
+	;   if dopenv.psfmod eq 'bspline' then begin
+  ;            print, (*chunk_sm[i].free_par)[fp].amp[1:*]
+ ;             ip_one = dop_psf_bspline((*chunk_sm[i].free_par)[fp].amp[1:*], dopenv=dopenv, xarr=xarr, cntr=dopenv.cntr)
+;	   endif;bspline
+;	endif; 0.1 < cntr < 1.2
+;	if abs(cntr) ge 1.8 then begin  ;dump far-out IP's
+;	   wt[i]=0.
+;	   ip_one= chunk_ip
+;	endif
 ;  endif  ; shift to center
-  endif; PSF centering
+;  endif; PSF centering
 
   ip_array[*,i]=ip_one*wt[i]
 endfor

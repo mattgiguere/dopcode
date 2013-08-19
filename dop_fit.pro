@@ -59,8 +59,8 @@ COMMON MPFIT_ERROR, ERROR_CODE
     ;lambda_new = (1+ v/c)*lambda
 
   ; FINE WAVELENGTH SCALE FOR THE MODEL
-    w0fine = max( [(*chunk.wiod)[0], wis_shft[0]] ) + disp
-    w1fine = min( [max((*chunk.wiod)), max(wis_shft)] ) - disp
+    w0fine = max( [(*chunk.wiod)[0], wis_shft[0]] ) + 0.5*disp
+    w1fine = min( [max((*chunk.wiod)), max(wis_shft)] ) - 0.5*disp
     disp_fine = double(par[1] / osamp)
     nfine = fix( (w1fine - w0fine) / disp_fine )  ;extra padding
     wav_fine = w0fine + dindgen(nfine)*disp_fine  
@@ -80,7 +80,7 @@ error_code=0
     if max(wav_fine) gt max((*chunk.wiod)) then error_code=-4 ; outside the iodine range
     if wav_fine[0] lt wis_shft[0] then error_code=-5          ; outside the template range
     if max(wav_fine) gt max(wis_shft) then error_code=-6      ; outside the template range
-;if error_code ne 0 then stop
+if error_code ne 0 then stop
 
   ; SPLINE IODINE AND DSST ONTO OVERSAMPLED DSST WAVELENGTH SCALE
     siod_fine=dspline((*chunk.wiod),(*chunk.siod),wav_fine)
@@ -92,8 +92,8 @@ error_code=0
   ; CONVOLVE WITH IP, BIN TO OBSERVED WAVELENGTH SCALE,
   ; REGISTER THE OBSERVED AND SYNTHETIC SPECTRA ON THE Y-AXIS
 ;jan7, 2013 fischer
-;    if pass eq 0 and avg eq 0 then ip = dop_pre_psf(par[4], dopenv=dopenv)
-;	if pass eq 0 and avg eq 1 then ip = chunk.ip[*,1]  ; 4 free pars - not psf
+    if pass eq 0 and avg eq 0 then ip = dop_pre_psf(par[4], dopenv=dopenv)
+	if pass eq 0 and avg eq 1 then ip = chunk.ip[*,1]  ; 4 free pars - not psf
     if pass eq 1 then begin
     	if dopenv.psfmod eq 'gaussian' then ip = dop_psf(par[4:n_elements(par)-1],dopenv=dopenv)
     	if dopenv.psfmod eq 'bspline' then ip = dop_psf_bspline(par[5:n_elements(par)-1], dopenv=dopenv, cntr=dopenv.psfcntr)

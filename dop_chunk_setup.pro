@@ -166,21 +166,19 @@ endif ;find closest in time
                 
 
  ; REPLACE PSF PARS WITH MEDIANS FROM THE YRMO SET OF BSTARS
-   if keyword_set(avg) then begin
+   if keyword_set(avg) and psfmod eq 'gaussian' then begin
    ;fischer jan7, 2013
    	  if ~keyword_set(vdavgnm) then vd_avgfile='vd'+tag+'AVG_'+yrmo else vd_avgfile=vdavgnm
    	  ;vd_avgfile='vdargAVGs_1212'
    	  fvdav=file_search(dopenv.files_dir+vd_avgfile,count=ccount)
    	  if ccount eq 0 then stop,'no vd_avgfile found'
    	  restore,dopenv.files_dir+vd_avgfile  ;chunk_avg
-   	  if psfmod eq 'gaussian' then begin
-   	  	for ij=0,dopenv.n_chunks-1 do begin
+   	  for ij=0,dopenv.n_chunks-1 do begin
    	  		vd_near[ij].ip[*,1]=vdav[ij].psf  ;chunk_avg[ij].ip[*,1] first pass
    	  		vd_near[ij].ip[*,2]=vdav[ij].psf  ;chunk_avg[ij].ip[*,2] second pass
    	  		for jk=0,npsf-1 do (*vd_near[ij].free_par)[1].amp[jk]=vdav[ij].par[jk] 
    	  		for jk=0,npsf-1 do (*vd_near[ij].free_par)[2].amp[jk]=vdav[ij].par[jk] 
-	  	endfor
-	  endif
+	  endfor
 ;	  if psfmod eq 'bspline' then begin 
 ;	  endif 	
    endif

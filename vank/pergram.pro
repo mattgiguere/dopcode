@@ -2,7 +2,7 @@ PRO pergram,cf,nu_out,peri_out,pkperiods,pkheights,title=title,     $
             fap=fap,signi=signi,simsigni=simsigni,     $
             lowper=lowper,pmax=pmax,yra=yra,         $
             psdpeaksort=psdpeaksort,multiple=multiple,noise=noise, $
-            verbose=verbose, noplot=noplot, numf=numf
+            verbose=verbose, noplot=noplot, numf=numf, minutes=minutes
 ;+
 ; NAME:
 ;         scargle
@@ -90,6 +90,7 @@ data=cf.mnvel
 
    ;; make times manageable (Scargle periodogram is time-shift invariant)
    time = tim-tim[0]
+   if keyword_set(minutes) then time=time*24.*60.
    if keyword_set(lowper) then pmin = lowper ;set orig keyword
 ;   c = data  ;   
    ;; defaults

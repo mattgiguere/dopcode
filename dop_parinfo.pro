@@ -92,7 +92,7 @@ if dopenv.psfmod eq 'gaussian' then begin
   ; PAR[4]: CENTRAL GAUSSIAN 
  ;   parinfo[4].value=0.9d
     parinfo[4].step=0.001
-    parinfo[4+ij].fixed=0          ; width
+    parinfo[4+ij].fixed=1        ; width
     
   ;[1, 2, 3, 4, 5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16]
   ;[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
@@ -100,25 +100,10 @@ if dopenv.psfmod eq 'gaussian' then begin
   ; PAR[5] - PAR[20]: DEFINE SIDE GAUSSIANS   
       for i=5,n_elements(par)-1 do begin
          parinfo[i+ij].step = 0.001
+         parinfo[i+ij].limited=[1,1]
+         parinfo[i+ij].limits=[-1.0,1.0]
       endfor
 
-  ; CENTRAL FLANKING GAUSSIANS MUST BE LOWER THAN CENTRAL GAUSSIAN
-  ; THIS CRASHES THE DOP ANALYSIS! COMPARES AMPLITUDES TO WIDTH OF
-  ; CENTRAL GAUSSIAN
-  ;  parinfo[12+ij:13+ij].limited=[0,1]
-  ;  parinfo[12+ij:13+ij].limits[1] = 0.95*parinfo[4+ij].value 
-     
-;      nf=n_elements(parinfo)  ; 4+17 = 21
-;       parinfo[5+ij:7+ij].limited=[1,1]
-;      parinfo[18+ij:20+ij].limited=[1,1] 
-;      parinfo[5+ij].limits = [-0.05,0.05]
-;      parinfo[6+ij].limits = [-0.09,0.09]
-;      parinfo[7+ij].limits = [-0.1,0.14]
-;      parinfo[18+ij].limits = [-0.1,0.14]
-;      parinfo[19+ij].limits = [-0.09,0.09]
-;      parinfo[20+ij].limits = [-0.05,0.05]
-;;;      parinfo[5:20].limited=[1,1]
-;;;      parinfo[5:20].limits=[-0.2,0.8]
  endif  ; psfmod=gaussian
 
  if dopenv.psfmod eq 'bspline' then begin

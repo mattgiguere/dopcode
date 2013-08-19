@@ -30,7 +30,7 @@ FUNCTION DOP_INIT, obsnm, iss_nm, iss_bc, iss_obnm = iss_obnm, $
                 psfpix = psfpix, psfsig = psfsig, psf_ampl = psf_ampl, $
                 osamp=osamp, avg=avg, observatory=observatory, $
                 st_pix=st_pix, st_ord=st_ord, n_ord=n_ord, nch_ord = nch_ord, $
-                n_chunks=n_chunks, $ 
+                n_chunks=n_chunks, mode=mode, $ 
                 psfmod=psfmod, npsfpix=npsfpix, shft_style=shft_style, $
                 decker = decker, dpad = dpad, n_wcof = n_wcof, xcorl_lambda = xcorl_lambda, $
                 xcorl_pix1=xcorl_pix1, xcorl_ord=xcorl_ord, $
@@ -97,6 +97,7 @@ FUNCTION DOP_INIT, obsnm, iss_nm, iss_bc, iss_obnm = iss_obnm, $
              psf_ampl: fltarr(n_elements(psfpix)),  $ ; amplitude of Gaussians for PSF description
              psfpix: fltarr(n_elements(psfpix)),  	$ ; location of Gaussians for PSF description
              psfsig: fltarr(n_elements(psfpix)),  	$ ; width of Gaussians for PSF description
+             mode: '',                        $ ;slit mode (narrow_slit, slit)
              psfmod: '', 					  $ ;PSF model to use: either 'gaussian' or 'bspline'
              psfbsplnplaces: [0,30,45,50,53,56,59,61,64,67,70,75,90,120], $ ;pix positions for the bspline model
              psfbsinvvar: dblarr(n_elements(psfpix)), $ ;inverse variance for bspline weighting
@@ -120,6 +121,7 @@ FUNCTION DOP_INIT, obsnm, iss_nm, iss_bc, iss_obnm = iss_obnm, $
    if n_elements(psfpix) gt 0 then dopenv.psfpix = psfpix
    if n_elements(psfsig) gt 0 then dopenv.psfsig = psfsig
    if n_elements(psf_ampl) gt 0 then dopenv.psf_ampl = psf_ampl
+   if n_elements(mode) gt 0 then dopenv.mode = mode
    if n_elements(psfmod) gt 0 then dopenv.psfmod = psfmod
    if n_elements(st_pix) gt 0 then dopenv.st_pix = st_pix
    if n_elements(st_ord) gt 0 then dopenv.st_ord = st_ord

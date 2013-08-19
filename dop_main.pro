@@ -69,11 +69,12 @@ PRO DOP_MAIN, starname, dopenv, obsnm=obsnm, pass=pass, tag=tag, nso=nso, $
               vdtag=vdtag, pix_filt = pix_filt, smdisp=smdisp, smwav=smwav, $
               iod_soln=iod_soln, plot=plot, tmpl_dir=tmpl_dir, avg=avg, vdavgnm=vdavgnm,  $
               yrmo=yrmo, demo=demo, cdnear_name=cdnear_name, verbose=verbose, $
-              lm=lm, crosscorl=crosscorl
+              lm=lm, crosscorl=crosscorl, frz_psf=frz_psf
 
  iss_nm=dopenv.iss_nm
  iss_bc=dopenv.iss_bc
  iss_obnm=dopenv.iss_obnm
+ mode=dopenv.mode
  if ~keyword_set(smdisp) then smdisp=0  
  if ~keyword_set(smwav) then smwav=0
  if ~keyword_set(vdtag) then vdtag=tag
@@ -87,7 +88,6 @@ if ~keyword_set(demo) then demo=0
 if ~keyword_set(verbose) then verbose=0
 if ~keyword_set(lm) then lm='mpf'
 if ~keyword_set(avg) then avg=0
-if ~keyword_set(cdnear_name) then cdnear_name=0
 
 if keyword_set(nso) then iss_nm = 'nso' 
 if keyword_set(nso) then iss_bc = 0.0d 
@@ -129,11 +129,13 @@ if (pass eq 1) then begin
 	   if keyword_set(iss_nm) then restore, dopenv.files_dir+iss_nm ; restore the ISS
 ;          test=where(tag_names(dsst) eq 'W0',ntest)  & if ntest gt 0 then iss=dsst
 	endif
-	dop_chunk_setup, dopenv, chunk_arr, obs_info, $
+	if ~keyword_set(cdnear_name) then dop_chunk_setup, dopenv, chunk_arr, obs_info, $
+		tag=tag, vdtag=vdtag, demo=demo, avg=avg, vdavgnm=vdavgnm, verbose=verbose, $
+		crosscorl=crosscorl, tmpl_dir=tmpl_dir, yrmo=yrmo
+	if keyword_set(cdnear_name) then dop_chunk_setup, dopenv, chunk_arr, obs_info, $
 		tag=tag, vdtag=vdtag, demo=demo, avg=avg, vdavgnm=vdavgnm, verbose=verbose, $
 		crosscorl=crosscorl, tmpl_dir=tmpl_dir, yrmo=yrmo, cdnear_name=cdnear_name
  
-    
 	nchunks=n_elements(chunk_arr.ordt) 
   ; CH-LOOP: ONE CHUNK AT A TIME... 
    ;if keyword_set(yrmo) then avg=1 else avg=0
@@ -160,13 +162,11 @@ if (pass eq 2) then begin
    nchunks=n_elements(chunk_arr.ordt)
    vd=dop_vdarr_setup(obsnm, dopenv, nchunks)
 
-;      dop_fitwav,chunk_arr, npix=dopenv.n_pix, poly_ord=6, pass=2
-
    for i=0, nchunks - 1 do begin
 	  chunk=chunk_arr[i]
-	  chk_filt=filt[chunk.pixt:chunk.pixt+dopenv.n_pix-1, chunk.ordt]
+	  chk_filt=ccd_mask[chunk.pixt:chunk.pixt+dopenv.n_pix-1, chunk.ordt]
 	  mod_chunk = dop_marq(chunk, dopenv, i, pass=pass, chunk_arr=chunk_arr, $
-		demo=demo, verbose=verbose, lm=lm, pfilt=chk_filt) 
+			       demo=demo, verbose=verbose, lm=lm, pfilt=chk_filt) 
 
 	; UPDATE CHUNK AND VD_ARR WITH MODEL PAR'S, VEL, FIT
 	  chunk = mod_chunk 
@@ -192,6 +192,7 @@ if (pass eq 2) then begin
    print,'Saving: ',savfile2
    print,'Saving: ',vdnm
 endif 
+
 chunk_clear, chunk_arr
 ;   winup,/all
 end
